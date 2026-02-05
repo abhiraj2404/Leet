@@ -2,53 +2,50 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8" />
-  <title>LeetCode Following – Daily Solves</title>
-  <link rel="stylesheet" href="sidepanel.css" />
+    <meta charset="UTF-8" />
+    <title>LeetCode Following – Daily Solves</title>
+    <link rel="stylesheet" href="sidepanel.css" />
 </head>
 
 <body class="lc-body">
-  <div class="lc-container">
-    <header class="lc-header">
-      <div class="lc-header-left">
-        <div class="lc-logo-dot"></div>
-        <div class="lc-header-text">
-          <div class="lc-title">Leet</div>
-        </div>
-      </div>
-    </header>
+    <div class="lc-container">
+        <header class="lc-header">
+            <div class="lc-header-left">
+                <img src="../images/leetcode-icon.png" alt="LeetCode" class="lc-logo-icon" />
+                <div class="lc-header-text">
+                    <div class="lc-title">Leet</div>
+                </div>
+            </div>
+        </header>
 
-    <main class="lc-main">
-      <form id="username-form" class="lc-username-form">
-        <label for="username-input" class="lc-label">
-          Your LeetCode username
-        </label>
-        <div class="lc-input-row">
-          <input id="username-input" type="text" class="lc-input" placeholder="e.g. chauhanabhiraj06"
-            autocomplete="off" />
-          <button type="submit" class="lc-button">Refresh</button>
-        </div>
-        <p class="lc-hint">
-          We’ll remember this on this browser using extension storage.
-        </p>
-      </form>
+        <main class="lc-main">
+            <form id="username-form" class="lc-username-form">
+                <label for="username-input" class="lc-label">
+                    Your LeetCode username
+                </label>
+                <div class="lc-input-row">
+                    <input id="username-input" type="text" class="lc-input" placeholder="e.g. chauhanabhiraj06"
+                        autocomplete="off" />
+                    <button type="submit" class="lc-button">Refresh</button>
+                </div>
+                <p class="lc-hint">
+                    We’ll remember this on this browser using extension storage.
+                </p>
+            </form>
 
-      <section id="status" class="lc-status"></section>
+            <section id="status" class="lc-status"></section>
 
-      <section id="results-section" class="lc-results hidden">
-        <div class="lc-results-header">
-          <span id="results-username" class="lc-results-username"></span>
-          <span id="results-refresh-time" class="lc-results-refresh"></span>
-        </div>
-        <div id="results-body" class="lc-list"></div>
-        <div id="empty-state" class="lc-empty hidden">
-          No solves yet today from your following list.
-        </div>
-      </section>
-    </main>
-  </div>
+            <section id="results-section" class="lc-results hidden">
+                <div id="results-body" class="lc-list"></div>
+                <span id="results-refresh-time" class="lc-results-refresh"></span>
+                <div id="empty-state" class="lc-empty hidden">
+                    No solves yet today from your following list.
+                </div>
+            </section>
+        </main>
+    </div>
 
-  <script src="sidepanel.js"></script>
+    <script src="sidepanel.js"></script>
 </body>
 
 </html>

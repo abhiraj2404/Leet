@@ -128,17 +128,15 @@ function setStatus(message, type = "info") {
 function renderResults(username, items) {
     const section = document.getElementById("results-section");
     const list = document.getElementById("results-body");
-    const usernameEl = document.getElementById("results-username");
     const refreshEl = document.getElementById("results-refresh-time");
     const emptyState = document.getElementById("empty-state");
 
-    if (!section || !list || !usernameEl || !refreshEl || !emptyState) return;
+    if (!section || !list || !refreshEl || !emptyState) return;
 
     if (!items.length) {
         section.classList.remove("hidden");
         list.innerHTML = "";
         emptyState.classList.remove("hidden");
-        usernameEl.textContent = `Following for @${username}`;
         const now = new Date();
         refreshEl.textContent = `Last updated ${now.toLocaleTimeString()}`;
         return;
@@ -150,33 +148,32 @@ function renderResults(username, items) {
 
     for (const item of items) {
         const row = document.createElement("div");
-        row.className = "lc-row";
+        row.className = item.isCurrentUser ? "lc-row lc-row-you" : "lc-row";
 
         const userWrapper = document.createElement("div");
         userWrapper.className = "lc-user-cell";
 
         const slugSpan = document.createElement("span");
-        slugSpan.className = "lc-user-slug";
-        slugSpan.textContent = item.userSlug;
+        slugSpan.className = item.isCurrentUser ? "lc-user-slug lc-user-you" : "lc-user-slug";
+        slugSpan.textContent = item.isCurrentUser ? "You" : item.userSlug;
 
         const realNameSpan = document.createElement("span");
         realNameSpan.className = "lc-user-realname";
-        realNameSpan.textContent = item.realName || "";
+        realNameSpan.textContent = item.isCurrentUser ? item.userSlug : (item.realName || "");
 
         userWrapper.appendChild(slugSpan);
         userWrapper.appendChild(realNameSpan);
         row.appendChild(userWrapper);
 
-        const pill = document.createElement("div");
-        pill.className =
+        const countEl = document.createElement("span");
+        countEl.className =
             "lc-count-pill" + (item.todayCount === 0 ? " lc-count-pill-zero" : "");
-        pill.textContent = item.todayCount.toString();
+        countEl.textContent = item.todayCount.toString();
 
-        row.appendChild(pill);
+        row.appendChild(countEl);
         list.appendChild(row);
     }
 
-    usernameEl.textContent = `Following for @${username}`;
     const now = new Date();
     refreshEl.textContent = `Last updated ${now.toLocaleTimeString()}`;
 }
@@ -188,23 +185,42 @@ async function loadAndRender(username) {
         return;
     }
 
-    setStatus("Loading following list…", "info");
+    setStatus("Loading your data…", "info");
 
     try {
+        // Fetch user's own count first
+        const myCount = await fetchUserTodayCount(trimmed);
+
+        setStatus("Loading following list…", "info");
+
         const items = await fetchDailyCountsForFollowing(trimmed, (done, total) => {
             setStatus(`Fetching today's solves… ${done}/${total}`, "info");
         });
 
-        if (!items.length) {
+        // Add user's own entry marked as "isCurrentUser"
+        const allItems = [
+            {
+                userSlug: trimmed,
+                realName: "",
+                todayCount: myCount,
+                isCurrentUser: true,
+            },
+            ...items,
+        ];
+
+        // Sort all by count (user will be sorted with everyone else)
+        allItems.sort((a, b) => b.todayCount - a.todayCount);
+
+        if (allItems.length <= 1) {
             setStatus(
                 "No following users found for this username, or they have no public data.",
                 "info"
             );
         } else {
-            setStatus("Loaded daily solves for your following.", "success");
+            setStatus("Loaded daily solves for you and your following.", "success");
         }
 
-        renderResults(trimmed, items);
+        renderResults(trimmed, allItems);
     } catch (err) {
         console.error(err);
         setStatus(

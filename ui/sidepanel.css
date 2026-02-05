@@ -10,8 +10,8 @@
   --lc-radius-md: 8px;
   --lc-radius-lg: 10px;
   --lc-shadow-soft: 0 4px 16px rgba(0, 0, 0, 0.55);
-  --lc-font: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
-    sans-serif;
+  --lc-font:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
 }
 
 *,
@@ -47,12 +47,10 @@ body.lc-body {
   gap: 10px;
 }
 
-.lc-logo-dot {
-  width: 18px;
-  height: 18px;
-  border-radius: 6px;
-  background: linear-gradient(135deg, #f89f1b 0%, #f37b1d 50%, #f2c94c 100%);
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+.lc-logo-icon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
 }
 
 .lc-header-text {
@@ -107,7 +105,9 @@ body.lc-body {
   outline: none;
   background-color: #1f1f1f;
   color: var(--lc-text);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease,
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
     background-color 0.15s ease;
 }
 
@@ -134,7 +134,9 @@ body.lc-body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.08s ease, box-shadow 0.08s ease,
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.08s ease,
     filter 0.12s ease;
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.22);
 }
@@ -174,14 +176,14 @@ body.lc-body {
 }
 
 .lc-results {
-  background-color: var(--lc-surface);
-  border-radius: var(--lc-radius-lg);
-  box-shadow: var(--lc-shadow-soft);
-  border: 1px solid #242424;
-  padding: 10px 10px 8px;
+  background-color: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  border: none;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 
 .lc-results-header {
@@ -204,57 +206,79 @@ body.lc-body {
 .lc-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0;
   margin-top: 4px;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .lc-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 10px;
-  border-radius: 6px;
-  background-color: #181818;
-  border: 1px solid #262626;
-  transition: background-color 0.12s ease, border-color 0.12s ease,
-    transform 0.06s ease;
+  padding: 12px 16px;
+  border-radius: 0;
+  background-color: #1a1a1a;
+  border: none;
+  border-bottom: 1px solid #2a2a2a;
+  transition: background-color 0.15s ease;
+}
+
+.lc-row:last-child {
+  border-bottom: none;
 }
 
 .lc-row:hover {
-  background-color: #202020;
-  border-color: #3a3a3a;
-  transform: translateY(-0.5px);
+  background-color: #252525;
+}
+
+.lc-row-you {
+  background-color: rgba(248, 159, 27, 0.08);
+}
+
+.lc-row-you:hover {
+  background-color: rgba(248, 159, 27, 0.12);
+}
+
+.lc-user-you {
+  color: var(--lc-accent);
 }
 
 .lc-user-cell {
   display: flex;
   flex-direction: column;
+  gap: 2px;
 }
 
 .lc-user-slug {
+  font-size: 14px;
   font-weight: 500;
+  color: #ffffff;
 }
 
 .lc-user-realname {
-  font-size: 11px;
-  color: var(--lc-muted);
+  font-size: 12px;
+  color: #8a8a8a;
 }
 
 .lc-count-pill {
   display: inline-flex;
   align-items: center;
-  justify-content: flex-end;
-  min-width: 40px;
-  padding: 2px 8px;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  margin-right: 4px;
   border-radius: 999px;
   background-color: var(--lc-accent-soft);
-  color: #ad6800;
+  color: var(--lc-accent);
+  font-size: 13px;
   font-weight: 600;
 }
 
 .lc-count-pill-zero {
-  background-color: #111111;
-  color: var(--lc-muted);
+  background-color: #222222;
+  color: #5a5a5a;
 }
 
 .lc-empty {
@@ -267,5 +291,3 @@ body.lc-body {
 .hidden {
   display: none !important;
 }
-
-
