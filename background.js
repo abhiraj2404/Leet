@@ -1,9 +1,7 @@
 chrome.action.onClicked.addListener(async (tab) => {
   if (!tab || !tab.id || !tab.url) return;
 
-  const isLeetCode =
-    tab.url.startsWith("https://leetcode.com") ||
-    tab.url.startsWith("http://leetcode.com");
+  const isLeetCode = tab.url.startsWith("https://leetcode.com")
 
   if (!isLeetCode) {
     // Only show the side panel when the user is on a LeetCode tab.
