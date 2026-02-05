@@ -254,6 +254,13 @@ body.lc-body {
   font-size: 14px;
   font-weight: 500;
   color: #ffffff;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.lc-user-slug:hover {
+  color: var(--lc-accent);
+  text-decoration: underline;
 }
 
 .lc-user-realname {

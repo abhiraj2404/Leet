@@ -153,15 +153,18 @@ function renderResults(username, items) {
         const userWrapper = document.createElement("div");
         userWrapper.className = "lc-user-cell";
 
-        const slugSpan = document.createElement("span");
-        slugSpan.className = item.isCurrentUser ? "lc-user-slug lc-user-you" : "lc-user-slug";
-        slugSpan.textContent = item.isCurrentUser ? "You" : item.userSlug;
+        const slugLink = document.createElement("a");
+        slugLink.className = item.isCurrentUser ? "lc-user-slug lc-user-you" : "lc-user-slug";
+        slugLink.textContent = item.isCurrentUser ? "You" : item.userSlug;
+        slugLink.href = `https://leetcode.com/u/${item.userSlug}/`;
+        slugLink.target = "_blank";
+        slugLink.rel = "noopener noreferrer";
 
         const realNameSpan = document.createElement("span");
         realNameSpan.className = "lc-user-realname";
         realNameSpan.textContent = item.isCurrentUser ? item.userSlug : (item.realName || "");
 
-        userWrapper.appendChild(slugSpan);
+        userWrapper.appendChild(slugLink);
         userWrapper.appendChild(realNameSpan);
         row.appendChild(userWrapper);
 
