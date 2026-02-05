@@ -1,0 +1,32 @@
+{
+  "name": "Leet",
+  "description": "Extension for daily problems and contest ranking.",
+  "version": "1.0",
+  "manifest_version": 3,
+  "action": {
+    "default_title": "Leet",
+    "default_icon": "images/leetcode-icon.png"
+  },
+  "permissions": [
+    "sidePanel",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://leetcode.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Ctrl+B",
+        "mac": "Command+B"
+      }
+    }
+  },
+  "side_panel": {
+    "default_path": "ui/sidepanel.html"
+  }
+}
