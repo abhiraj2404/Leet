@@ -1,12 +1,9 @@
+// Enable side panel to open on action click
+chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
+  .catch((error) => console.error(error));
+
 chrome.action.onClicked.addListener(async (tab) => {
   if (!tab || !tab.id || !tab.url) return;
-
-  const isLeetCode = tab.url.startsWith("https://leetcode.com")
-
-  if (!isLeetCode) {
-    // Only show the side panel when the user is on a LeetCode tab.
-    return;
-  }
 
   await chrome.sidePanel.setOptions({
     tabId: tab.id,
