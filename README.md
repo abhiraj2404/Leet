@@ -15,11 +15,27 @@ A Chrome extension that shows how many LeetCode problems you and the people you 
 
 ## Installation
 
-1. Clone this repository
-2. Go to `chrome://extensions/`
-3. Enable "Developer mode"
-4. Click "Load unpacked" and select the extension folder
-5. Navigate to leetcode.com and click the extension icon (or press `Ctrl+B`)
+### Download from GitHub Releases (Recommended)
+
+1. Go to the [Releases](https://github.com/abhiraj2404/Leet/releases) page
+2. Download the latest `leet-extension-v1.0.zip` file
+3. Extract the zip file to a folder
+4. Open your browser and navigate to:
+   - Chrome: `chrome://extensions`
+   - Brave: `brave://extensions`
+   - Edge: `edge://extensions`
+5. Enable **Developer mode** (toggle in the top right corner)
+6. Click **Load unpacked**
+7. Select the extracted folder
+8. Navigate to [leetcode.com](https://leetcode.com) and click the extension icon (or press `Ctrl+B`)
+
+### Clone from Source
+
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/abhiraj2404/Leet
+   ```
+2. Follow steps 4-8 above
 
 ## Usage
 
