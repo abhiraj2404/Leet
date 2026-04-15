@@ -41,43 +41,87 @@ async function fetchFollowing(username) {
     return data?.following?.users ?? [];
 }
 
-async function fetchUserTodayCount(userSlug) {
+// UTC midnight (seconds) for a given day offset: 0=today, -1=yesterday, -6=6 days ago.
+function utcMidnight(offsetDays = 0) {
+    const now = new Date();
+    return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + offsetDays) / 1000;
+}
+
+// Count unique problems solved in a period from a list of AC submissions.
+// Deduplicates by titleSlug so re-submissions of the same problem count once.
+// Note: recentAcSubmissionList is hard-capped at 20 by LeetCode regardless of limit.
+function countUniqueSolved(submissions, period) {
+    const start = utcMidnight(period === "yesterday" ? -1 : period === "week" ? -6 : 0);
+    const end   = period === "yesterday" ? utcMidnight(0) : Infinity;
+
+    const seen = new Set();
+    for (const s of submissions) {
+        const t = Number(s.timestamp);
+        if (t >= start && t < end) {
+            seen.add(s.titleSlug);
+        }
+    }
+    return seen.size;
+}
+
+async function fetchUserPeriodCount(userSlug, period) {
     const query = `
-    query RecentWithTimestamp($username: String!) {
+    query RecentAC($username: String!) {
       recentAcSubmissionList(username: $username, limit: 20) {
-        id
-        title
         titleSlug
         timestamp
       }
-      currentTimestamp
     }
   `;
 
     const data = await graphQLRequest(query, { username: userSlug });
     const submissions = data?.recentAcSubmissionList ?? [];
-    const currentTimestamp = data?.currentTimestamp;
-
-    if (!currentTimestamp) {
-        return 0;
-    }
-
-    const startOfDay =
-        new Date(new Date().setHours(0, 0, 0, 0)).getTime() / 1000;
-    const localNow = Date.now() / 1000;
-    const timeDiff = localNow - startOfDay;
-
-    let count = 0;
-    for (const submission of submissions) {
-        if (currentTimestamp - Number(submission.timestamp) < timeDiff) {
-            count += 1;
-        }
-    }
-
-    return count;
+    return countUniqueSolved(submissions, period);
 }
 
-async function fetchDailyCountsForFollowing(username, onProgress) {
+async function fetchUserContestRating(userSlug) {
+    const query = `
+    query userContestRankingInfo($username: String!) {
+      userContestRanking(username: $username) {
+        rating
+        attendedContestsCount
+        globalRanking
+      }
+    }
+  `;
+    const data = await graphQLRequest(query, { username: userSlug });
+    const r = data?.userContestRanking?.rating;
+    return typeof r === "number" ? r : null;
+}
+
+async function fetchContestRatingsForFollowing(username, onProgress) {
+    const following = await fetchFollowing(username);
+    if (!following.length) return [];
+
+    const results = [];
+    let processed = 0;
+
+    for (const user of following) {
+        let rating = null;
+        try {
+            rating = await fetchUserContestRating(user.userSlug);
+        } catch (err) {
+            console.warn(`Failed to fetch rating for ${user.userSlug}:`, err.message);
+        }
+        results.push({
+            userSlug: user.userSlug,
+            realName: user.realName,
+            rating,
+        });
+        processed += 1;
+        if (onProgress) onProgress(processed, following.length);
+    }
+
+    results.sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1));
+    return results;
+}
+
+async function fetchDailyCountsForFollowing(username, period, onProgress) {
     const following = await fetchFollowing(username);
 
     if (!following.length) {
@@ -88,11 +132,16 @@ async function fetchDailyCountsForFollowing(username, onProgress) {
     let processed = 0;
 
     for (const user of following) {
-        const todayCount = await fetchUserTodayCount(user.userSlug);
+        let count = 0;
+        try {
+            count = await fetchUserPeriodCount(user.userSlug, period);
+        } catch (err) {
+            console.warn(`Failed to fetch data for ${user.userSlug}:`, err.message);
+        }
         results.push({
             userSlug: user.userSlug,
             realName: user.realName,
-            todayCount,
+            count,
         });
         processed += 1;
 
@@ -101,7 +150,7 @@ async function fetchDailyCountsForFollowing(username, onProgress) {
         }
     }
 
-    results.sort((a, b) => b.todayCount - a.todayCount);
+    results.sort((a, b) => b.count - a.count);
     return results;
 }
 
@@ -125,7 +174,7 @@ function setStatus(message, type = "info") {
     }
 }
 
-function renderResults(username, items) {
+function renderResults(username, items, period, mode = "questions") {
     const section = document.getElementById("results-section");
     const list = document.getElementById("results-body");
     const refreshEl = document.getElementById("results-refresh-time");
@@ -133,10 +182,15 @@ function renderResults(username, items) {
 
     if (!section || !list || !refreshEl || !emptyState) return;
 
+    const periodLabel = period === "yesterday" ? "yesterday" : period === "week" ? "this week" : "today";
+
     if (!items.length) {
         section.classList.remove("hidden");
         list.innerHTML = "";
         emptyState.classList.remove("hidden");
+        emptyState.textContent = mode === "rating"
+            ? "No contest data found for your following list."
+            : `No solves ${periodLabel} from your following list.`;
         const now = new Date();
         refreshEl.textContent = `Last updated ${now.toLocaleTimeString()}`;
         return;
@@ -169,9 +223,14 @@ function renderResults(username, items) {
         row.appendChild(userWrapper);
 
         const countEl = document.createElement("span");
-        countEl.className =
-            "lc-count-pill" + (item.todayCount === 0 ? " lc-count-pill-zero" : "");
-        countEl.textContent = item.todayCount.toString();
+        if (mode === "rating") {
+            const r = item.rating;
+            countEl.className = "lc-count-pill" + (r === null ? " lc-count-pill-zero" : "");
+            countEl.textContent = r !== null ? Math.round(r).toString() : "—";
+        } else {
+            countEl.className = "lc-count-pill" + (item.count === 0 ? " lc-count-pill-zero" : "");
+            countEl.textContent = item.count.toString();
+        }
 
         row.appendChild(countEl);
         list.appendChild(row);
@@ -181,72 +240,154 @@ function renderResults(username, items) {
     refreshEl.textContent = `Last updated ${now.toLocaleTimeString()}`;
 }
 
-async function loadAndRender(username) {
+// ── Cache ─────────────────────────────────────────────────────────────────────
+// Both datasets are fetched together on load; tab switches just re-render from
+// this cache without any network requests.
+const dataCache = {
+    username: null,
+    period: null,
+    questions: null,  // sorted array of { userSlug, realName, count, isCurrentUser }
+    ratings: null,    // sorted array of { userSlug, realName, rating, isCurrentUser }
+};
+
+function clearResultsUI() {
+    const list = document.getElementById("results-body");
+    const section = document.getElementById("results-section");
+    if (list) list.innerHTML = "";
+    if (section) section.classList.add("hidden");
+}
+
+function getActiveMode() {
+    return document.querySelector(".lc-mode-btn--active")?.dataset.mode ?? "questions";
+}
+
+function renderFromCache() {
+    if (!dataCache.username) return;
+    const mode = getActiveMode();
+    const items = mode === "rating" ? dataCache.ratings : dataCache.questions;
+    renderResults(dataCache.username, items ?? [], dataCache.period, mode);
+}
+
+// Build a sorted questions array for a given period.
+async function buildQuestionsItems(username, period, onProgress) {
+    const myCount = await fetchUserPeriodCount(username, period);
+    const items = await fetchDailyCountsForFollowing(username, period, onProgress);
+    const all = [
+        { userSlug: username, realName: "", count: myCount, isCurrentUser: true },
+        ...items,
+    ];
+    all.sort((a, b) => b.count - a.count);
+    return all;
+}
+
+// Build a sorted ratings array.
+async function buildRatingsItems(username) {
+    let myRating = null;
+    try { myRating = await fetchUserContestRating(username); } catch (e) {
+        console.warn(`Failed to fetch own rating for ${username}:`, e.message);
+    }
+    const items = await fetchContestRatingsForFollowing(username);
+    const all = [
+        { userSlug: username, realName: "", rating: myRating, isCurrentUser: true },
+        ...items,
+    ];
+    all.sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1));
+    return all;
+}
+
+// Fetch questions + ratings together, then render the active tab.
+async function loadAll(username, period) {
     const trimmed = username.trim();
-    if (!trimmed) {
-        setStatus("Please enter a username.", "error");
-        return;
+    if (!trimmed) { setStatus("Please enter a username.", "error"); return; }
+
+    clearResultsUI();
+    setStatus("Loading data…", "info");
+
+    const [qRes, rRes] = await Promise.allSettled([
+        buildQuestionsItems(trimmed, period, (done, total) => {
+            setStatus(`Loading data… ${done}/${total}`, "info");
+        }),
+        buildRatingsItems(trimmed),
+    ]);
+
+    dataCache.username = trimmed;
+    dataCache.period   = period;
+    dataCache.questions = qRes.status === "fulfilled" ? qRes.value : [];
+    dataCache.ratings   = rRes.status === "fulfilled" ? rRes.value : [];
+
+    if (qRes.status === "rejected") console.error("Questions load failed:", qRes.reason);
+    if (rRes.status === "rejected") console.error("Ratings load failed:", rRes.reason);
+
+    const periodLabel = period === "yesterday" ? "yesterday" : period === "week" ? "this week" : "today";
+    if (qRes.status === "rejected" && rRes.status === "rejected") {
+        setStatus("Failed to load data. Check the username or try again later.", "error");
+    } else if (dataCache.questions.length <= 1 && dataCache.ratings.length <= 1) {
+        setStatus("No following users found for this username.", "info");
+    } else {
+        setStatus(`Loaded solves for ${periodLabel} · contest ratings.`, "success");
     }
 
-    setStatus("Loading your data…", "info");
+    renderFromCache();
+}
+
+// Period changed: only re-fetch questions (ratings don't depend on period).
+async function reloadQuestions(username, period) {
+    const trimmed = username.trim();
+    if (!trimmed) return;
+
+    clearResultsUI();
+    setStatus("Loading questions…", "info");
 
     try {
-        // Fetch user's own count first
-        const myCount = await fetchUserTodayCount(trimmed);
-
-        setStatus("Loading following list…", "info");
-
-        const items = await fetchDailyCountsForFollowing(trimmed, (done, total) => {
-            setStatus(`Fetching today's solves… ${done}/${total}`, "info");
+        dataCache.questions = await buildQuestionsItems(trimmed, period, (done, total) => {
+            setStatus(`Loading questions… ${done}/${total}`, "info");
         });
-
-        // Add user's own entry marked as "isCurrentUser"
-        const allItems = [
-            {
-                userSlug: trimmed,
-                realName: "",
-                todayCount: myCount,
-                isCurrentUser: true,
-            },
-            ...items,
-        ];
-
-        // Sort all by count (user will be sorted with everyone else)
-        allItems.sort((a, b) => b.todayCount - a.todayCount);
-
-        if (allItems.length <= 1) {
-            setStatus(
-                "No following users found for this username, or they have no public data.",
-                "info"
-            );
-        } else {
-            setStatus("Loaded daily solves for you and your following.", "success");
-        }
-
-        renderResults(trimmed, allItems);
+        dataCache.period = period;
+        const periodLabel = period === "yesterday" ? "yesterday" : period === "week" ? "this week" : "today";
+        setStatus(`Loaded solves for ${periodLabel}.`, "success");
     } catch (err) {
         console.error(err);
-        setStatus(
-            "Failed to load data. Please check the username or try again later.",
-            "error"
-        );
+        setStatus("Failed to load questions.", "error");
+        dataCache.questions = [];
     }
+
+    renderFromCache();
 }
 
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("username-form");
     const input = document.getElementById("username-input");
+    const periodSelect = document.getElementById("period-select");
+    const modeButtons = document.querySelectorAll(".lc-mode-btn");
 
     if (!(form instanceof HTMLFormElement) || !(input instanceof HTMLInputElement)) {
         return;
     }
 
+    function getSelectedPeriod() {
+        return periodSelect instanceof HTMLSelectElement ? periodSelect.value : "today";
+    }
+
+    // Tab switch: instant re-render from cache, no network request.
+    modeButtons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+            modeButtons.forEach((b) => b.classList.remove("lc-mode-btn--active"));
+            btn.classList.add("lc-mode-btn--active");
+
+            if (periodSelect instanceof HTMLSelectElement) {
+                periodSelect.classList.toggle("hidden", btn.dataset.mode === "rating");
+            }
+
+            renderFromCache();
+        });
+    });
+
     if (chrome?.storage?.local) {
-        chrome.storage.local.get([ "leetcodeUsername" ], (result) => {
+        chrome.storage.local.get(["leetcodeUsername"], (result) => {
             const saved = result.leetcodeUsername;
             if (typeof saved === "string" && saved.trim()) {
                 input.value = saved;
-                loadAndRender(saved);
+                loadAll(saved, getSelectedPeriod());
             } else {
                 setStatus("Enter your LeetCode username to get started.", "info");
             }
@@ -258,17 +399,21 @@ document.addEventListener("DOMContentLoaded", () => {
     form.addEventListener("submit", (event) => {
         event.preventDefault();
         const username = input.value.trim();
-        if (!username) {
-            setStatus("Please enter a username.", "error");
-            return;
-        }
+        if (!username) { setStatus("Please enter a username.", "error"); return; }
 
         if (chrome?.storage?.local) {
             chrome.storage.local.set({ leetcodeUsername: username });
         }
 
-        loadAndRender(username);
+        loadAll(username, getSelectedPeriod());
     });
+
+    if (periodSelect instanceof HTMLSelectElement) {
+        periodSelect.addEventListener("change", () => {
+            const username = input.value.trim();
+            if (username) reloadQuestions(username, getSelectedPeriod());
+        });
+    }
 });
 
 

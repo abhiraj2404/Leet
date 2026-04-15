@@ -158,6 +158,69 @@ body.lc-body {
   color: var(--lc-muted);
 }
 
+.lc-controls-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.lc-mode-toggle {
+  display: flex;
+  background: #1a1a1a;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.lc-mode-btn {
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--lc-muted);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.lc-mode-btn--active {
+  background: var(--lc-accent);
+  color: #141414;
+}
+
+.lc-mode-btn:not(.lc-mode-btn--active):hover {
+  color: var(--lc-text);
+}
+
+.lc-period-select {
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 6px;
+  border: 1px solid #3a3a3a;
+  background-color: #1f1f1f;
+  color: var(--lc-text);
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238c8c8c'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 24px;
+  transition: border-color 0.15s ease;
+}
+
+.lc-period-select:focus {
+  border-color: var(--lc-accent);
+}
+
+.lc-period-select option {
+  background-color: #1f1f1f;
+  color: var(--lc-text);
+}
+
 .lc-status {
   font-size: 12px;
   min-height: 18px;
